@@ -4,12 +4,14 @@ package main
 // xq . xmlfile ...
 
 import (
-	"encoding/xml"
+	"flag"
 	"fmt"
-	"io"
 	"os"
+
+	"github.com/beevik/etree"
 )
 
+/*
 func xmlToMap(r io.Reader) map[string]string {
 	// result
 	m := make(map[string]string)
@@ -46,7 +48,7 @@ func parse(r io.Reader) map[string]string {
 		}
 		switch se := t.(type) {
 		case xml.StartElement:
-			if se.Name.Local == "Paragraph" {
+			if se.Name.Local == "project" {
 				// Get the next token after the Paragraph start element, which will be the tag contents
 				//innerText, ok := decoder.Token().(xml.CharData)
 				innerText, err := decoder.Token()
@@ -58,17 +60,36 @@ func parse(r io.Reader) map[string]string {
 				//solutions = append(solutions, string(innerText.(xml.CharData)))
 				solutions["x"] = string(innerText.(xml.CharData))
 			}
+			//case xml.EndElement:
 		}
 	}
 	return solutions
 }
+*/
 
 func main() {
-	file, err := os.Open("config.xml")
-	if err != nil {
+	file := flag.String("i", "config.xml", "input file")
+	flag.Parse()
+	if len(flag.Args()) < 1 {
+		fmt.Println("Usage:\txq [-i FILE] SELECTOR\nor:\techo '<xml>...</xml>' | xq SELECTOR")
+		os.Exit(1)
+	}
+	selector := flag.Args()[0]
+
+	doc := etree.NewDocument()
+	if err := doc.ReadFromFile(*file); err != nil {
 		panic(err)
 	}
-	defer file.Close()
+
+	subdoc := etree.NewDocument()
+	for _, e := range doc.FindElements(selector) {
+		//fmt.Printf("%s: %s\n", e.Tag, e.Text())
+		subdoc.AddChild(e)
+	}
+
+	subdoc.Indent(2)
+	subdoc.WriteTo(os.Stdout)
+
 	//xmlReader := bytes.NewReader([]byte(your_xml_as_a_string_here))
 	//yourPinnacleLineFeed := new(Pinnacle_Line_Feed)
 	//if err := xml.NewDecoder(xmlReader).Decode(yourPinnacleLineFeed); err != nil {
@@ -76,6 +97,6 @@ func main() {
 	//}
 	//r := strings.NewReader(XML)
 	//m := xmlToMap(file)
-	m := parse(file)
-	fmt.Println(m)
+	//m := parse(file)
+	//fmt.Println(m)
 }
